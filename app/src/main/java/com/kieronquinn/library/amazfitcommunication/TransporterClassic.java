@@ -35,14 +35,14 @@ public class TransporterClassic extends Transporter {
     private static Intent c;
     private WeakReference<Context> d;
     private String e;
-    private String f;
-    private ITransportDataService g;
+    private final String tag;
+    private ITransportDataService transportDataService;
     private boolean h;
     private boolean i;
-    private final List<Transporter.b> j = new ArrayList();
-    private final LongSparseArray<Transporter.c> k = new LongSparseArray();
-    private final List<Transporter.a> l = new ArrayList();
-    private final List<Transporter.ServiceConnectionListener> m = new ArrayList();
+    private final List<Transporter.b> j = new ArrayList<>();
+    private final LongSparseArray<Transporter.c> k = new LongSparseArray<>();
+    private final List<Transporter.a> l = new ArrayList<>();
+    private final List<Transporter.ServiceConnectionListener> m = new ArrayList<>();
     private ITransportCallbackListener n = new StubOne(this);
     private ITransportDataListener o = new StubTwo(this);
     private ITransportChannelListener p = new StubThree(this);
@@ -51,7 +51,7 @@ public class TransporterClassic extends Transporter {
     private TransporterClassic(Context paramContext, String paramString) {
         this.d = new WeakReference(paramContext);
         this.e = paramString;
-        this.f = ("Transporter-Classic[" + paramString + "]");
+        this.tag = ("Transporter-Classic[" + paramString + "]");
     }
 
     private Intent a(PackageManager paramPackageManager, String paramString) {
@@ -82,7 +82,7 @@ public class TransporterClassic extends Transporter {
         v1.setData(arg9);
         if (this.isTransportServiceConnected()) {
             if (TransporterClassic.DEBUG) {
-                Log.d(this.f, "Send : " + v1 + ", " + arg7, new Object[0]);
+                Log.d(this.tag, "Send : " + v1 + ", " + arg7, new Object[0]);
             }
 
             if (arg10 != null) {
@@ -95,12 +95,12 @@ public class TransporterClassic extends Transporter {
             }
 
             if (arg7 != null) {
-                this.g.sendDataTo(arg7, v1);
+                this.transportDataService.sendDataTo(arg7, v1);
                 return;
             }
 
             try {
-                this.g.sendData(v1);
+                this.transportDataService.sendData(v1);
             } catch (Exception v0_1) {
                 v0_1.printStackTrace();
                 v2 = this.k;
@@ -112,7 +112,7 @@ public class TransporterClassic extends Transporter {
             }
         }else{
             if (TransporterClassic.DEBUG) {
-                Log.w(this.f, "Send : " + v1 + ", without service connected!!", new Object[0]);
+                Log.w(this.tag, "Send : " + v1 + ", without service connected!!", new Object[0]);
             }
         }
 
@@ -179,18 +179,18 @@ public class TransporterClassic extends Transporter {
 
     public void connectTransportService() {
         if (TransporterClassic.DEBUG) {
-            Log.d(this.f, "Connect TransportService, Now Is Connected : " + this.i + ", Is Connecting : " + this.h, new Object[0]);
+            Log.d(this.tag, "Connect TransportService, Now Is Connected : " + this.i + ", Is Connecting : " + this.h, new Object[0]);
         }
 
         if (!this.i && !this.h) {
             Object v0 = this.d.get();
             if (v0 == null) {
-                Log.w(this.f, "Context is NULL!!", new Object[0]);
+                Log.w(this.tag, "Context is NULL!!", new Object[0]);
             } else {
                 if (TransporterClassic.c == null) {
                     TransporterClassic.c = this.a(((Context) v0).getPackageManager(), "com.huami.watch.transport.DataTransportService");
                     if (TransporterClassic.c == null) {
-                        Log.e(this.f, "DataTransportService Not Found!!", new Object[0]);
+                        Log.e(this.tag, "DataTransportService Not Found!!", new Object[0]);
                         return;
                     }
                 }
@@ -232,7 +232,7 @@ public class TransporterClassic extends Transporter {
                     return;
                 }
 
-                String v1 = this.f;
+                String v1 = this.tag;
                 StringBuilder v2 = new StringBuilder().append("Connect TransportService : ");
                 String v0_2 = v0_1 ? "Success" : "Failed";
                 Log.d(v1, v2.append(v0_2).toString(), new Object[0]);
@@ -267,12 +267,12 @@ public class TransporterClassic extends Transporter {
     }
 
     static ITransportDataService a(TransporterClassic arg0, ITransportDataService arg1) {
-        arg0.g = arg1;
+        arg0.transportDataService = arg1;
         return arg1;
     }
 
     static ITransportDataService g(TransporterClassic arg1) {
-        return arg1.g;
+        return arg1.transportDataService;
     }
 
     static ITransportDataListener j(TransporterClassic arg1) {
@@ -281,17 +281,21 @@ public class TransporterClassic extends Transporter {
 
     public void disconnectTransportService() {
         if (DEBUG) {
-            Log.d(this.f, "Disconnect TransportService, Now Is Connected : " + this.i + ", Is Connecting : " + this.h, new Object[0]);
+            Log.d(this.tag, "Disconnect TransportService, Now Is Connected : " + this.i + ", Is Connecting : " + this.h, new Object[0]);
         }
         if (this.i) {
             this.h = false;
         }
-        this.g.unregistersendCallbackListener(this.n);
+        try {
+            this.transportDataService.unregistersendCallbackListener(this.n);
+        } catch (NullPointerException e) {
+            Log.e(this.tag, "Null pointer exception unregistering callback: " + e);
+        }
         Object v0 = this.d.get();
-        if(localServiceConnection != null && v0 != null){
+        if (localServiceConnection != null && v0 != null) {
             try {
                 ((Context) v0).unbindService(localServiceConnection);
-            }catch (Exception e){
+            } catch (Exception e) {
 
             }
         }
@@ -304,7 +308,7 @@ public class TransporterClassic extends Transporter {
 
     public boolean isTransportServiceConnected() {
         if (DEBUG) {
-            Log.d(this.f, "TransportService Now Is Connected : " + this.i, new Object[0]);
+            Log.d(this.tag, "TransportService Now Is Connected : " + this.i, new Object[0]);
         }
         return this.i;
     }
@@ -396,7 +400,7 @@ public class TransporterClassic extends Transporter {
     }
 
     static String b(TransporterClassic arg1) {
-        return arg1.f;
+        return arg1.tag;
     }
 
     class StubOne extends ITransportCallbackListener.Stub {
